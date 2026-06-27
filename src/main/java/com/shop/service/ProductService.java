@@ -23,7 +23,7 @@ public class ProductService {
         return productRepository.findAll(pageable);
     }
 
-    public Product getProductById(Long id) {
+    public Product getProductById(@NonNull Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found with id: " + id));
     }
@@ -37,12 +37,12 @@ public class ProductService {
     }
 
     @Transactional
-    public Product createProduct(Product product) {
+    public Product createProduct(@NonNull Product product) {
         return productRepository.save(product);
     }
 
     @Transactional
-    public void deleteProduct(Long id) {
+    public void deleteProduct(@NonNull Long id) {
         productRepository.deleteById(id);
     }
 

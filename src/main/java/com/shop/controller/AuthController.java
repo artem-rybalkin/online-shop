@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -100,7 +101,7 @@ public class AuthController {
                 .body(new AuthResponse(user.getUsername(), user.getEmail()));
     }
 
-    private ResponseCookie buildCookie(String value, long maxAgeSeconds) {
+    private ResponseCookie buildCookie(@NonNull String value, long maxAgeSeconds) {
         return ResponseCookie.from(COOKIE_NAME, value)
                 .httpOnly(true)
                 .secure(cookieSecure)

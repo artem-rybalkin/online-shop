@@ -19,17 +19,19 @@ public class OnlineShopApplication {
 
 	@Bean
 	@org.springframework.context.annotation.Profile("!test")
+	@SuppressWarnings("null")
 	public CommandLineRunner demo(ProductService productService,
 	                              UserRepository userRepository,
 	                              PasswordEncoder passwordEncoder) {
 		return (args) -> {
 			if (userRepository.findByUsername("admin").isEmpty()) {
-				userRepository.save(User.builder()
+				User admin = User.builder()
 						.username("admin")
 						.email("admin@shop.local")
 						.password(passwordEncoder.encode("admin"))
 						.role("ADMIN")
-						.build());
+						.build();
+				userRepository.save(admin);
 			}
 
 			if (productService.getAllProducts(org.springframework.data.domain.PageRequest.of(0, 1)).isEmpty()) {

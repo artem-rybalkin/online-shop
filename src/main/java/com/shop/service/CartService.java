@@ -6,6 +6,7 @@ import com.shop.exception.NotFoundException;
 import com.shop.exception.OrderException;
 import com.shop.repository.CartItemRepository;
 import com.shop.repository.ProductRepository;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,8 @@ public class CartService {
     }
 
     @Transactional
-    public CartItem addToCart(String sessionId, Long productId, int quantity) {
+    @SuppressWarnings("null")
+    public CartItem addToCart(String sessionId, @NonNull Long productId, int quantity) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found with id: " + productId));
 
@@ -55,7 +57,7 @@ public class CartService {
         return cartItemRepository.save(newItem);
     }
 
-    public void removeFromCart(Long cartItemId, String sessionId) {
+    public void removeFromCart(@NonNull Long cartItemId, String sessionId) {
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new NotFoundException("Cart item not found with id: " + cartItemId));
         if (!item.getSessionId().equals(sessionId)) {

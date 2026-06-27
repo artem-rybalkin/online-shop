@@ -7,6 +7,7 @@ import com.shop.repository.OrderRepository;
 import com.shop.repository.UserRepository;
 import com.shop.repository.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ public class OrderService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public Order createOrder(String sessionId, String customerName, String customerEmail) {
         log.info("Processing order placement for customer: {} (Session ID: {})", customerEmail, sessionId);
         List<CartItem> cartItems = cartService.getCart(sessionId);
@@ -107,7 +109,7 @@ public class OrderService {
         return orderRepository.findAll();
     }
 
-    public Order getOrderById(Long id, String sessionId) {
+    public Order getOrderById(@NonNull Long id, String sessionId) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Order not found with id: " + id));
 

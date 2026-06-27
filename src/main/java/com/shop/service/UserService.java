@@ -19,6 +19,7 @@ public class UserService {
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
+    @SuppressWarnings("null")
     public User registerUser(String username, String password, String email) {
         User user = new User();
         user.setUsername(username);
