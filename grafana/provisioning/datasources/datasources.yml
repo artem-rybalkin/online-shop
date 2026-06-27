@@ -1,0 +1,39 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    url: http://prometheus:9090
+    access: proxy
+    isDefault: true
+    jsonData:
+      timeInterval: '15s'
+
+  - name: Loki
+    type: loki
+    uid: loki
+    url: http://loki:3100
+    access: proxy
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    url: http://tempo:3200
+    access: proxy
+    jsonData:
+      httpMethod: GET
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+        customQuery: true
+        query: '{container="shop-app"} | json | traceId="${__trace.traceId}"'
+      tracesToMetrics:
+        datasourceUid: prometheus
+        queries:
+          - name: Request Rate
+            query: 'sum(rate(http_server_requests_seconds_count[$__rate_interval]))'
+      lokiSearch:
+        datasourceUid: loki
+      nodeGraph:
+        enabled: true

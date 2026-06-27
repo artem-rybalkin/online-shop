@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SHOPX — Online Store</title>
+  <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">SHOPX</div>
+  <div class="header-actions">
+    <div id="userSection">
+      <button class="auth-trigger" onclick="toggleAuthModal()">Login / Register</button>
+    </div>
+    <button class="cart-btn" onclick="toggleCart()">
+      🛒 Cart
+      <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>FIND YOUR<br><span>NEXT DEAL</span></h1>
+  <p>Browse our curated collection of electronics, shoes, and clothing.</p>
+</section>
+
+<!-- SEARCH -->
+<div class="search-wrap">
+  <input class="search-input" type="text" id="searchInput"
+    placeholder="Search products..." oninput="handleSearch(this.value)"/>
+</div>
+
+<!-- FILTERS -->
+<div class="filters" id="categoryFilters">
+  <!-- Dynamic buttons will be injected here -->
+</div>
+
+<!-- PRODUCT GRID -->
+<div class="grid" id="productGrid">
+  <div class="status"><div class="spinner"></div>Loading products...</div>
+</div>
+
+<!-- CART OVERLAY -->
+<div class="overlay" id="overlay" onclick="toggleCart()"></div>
+
+<!-- CART DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <h2>Your Cart</h2>
+    <button class="close-btn" onclick="toggleCart()">✕</button>
+  </div>
+  <div class="drawer-items" id="drawerItems">
+    <div class="drawer-empty">Your cart is empty</div>
+  </div>
+  <div class="drawer-footer">
+    <div class="total-row">
+      <span class="total-label">Total</span>
+      <span class="total-val" id="totalVal">0.00</span>
+    </div>
+    <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">Checkout →</button>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal auth-modal">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Login</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Register</button>
+    </div>
+    
+    <div id="loginForm">
+      <div class="modal-field">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="Enter username"/>
+      </div>
+      <div class="modal-field">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="••••••••"/>
+      </div>
+      <button class="modal-confirm" style="width:100%" onclick="handleAuth('login')">Sign In →</button>
+    </div>
+
+    <div id="registerForm" style="display: none;">
+      <div class="modal-field">
+        <label>Username</label>
+        <input type="text" id="regUser" placeholder="Choose username"/>
+      </div>
+      <div class="modal-field">
+        <label>Email</label>
+        <input type="email" id="regEmail" placeholder="your@email.com" required/>
+      </div>
+      <div class="modal-field">
+        <label>Password</label>
+        <input type="password" id="regPass" placeholder="Create password"/>
+      </div>
+      <button class="modal-confirm" style="width:100%" onclick="handleAuth('register')">Create Account →</button>
+    </div>
+
+    <button class="modal-cancel" style="width:100%; margin-top: 1rem;" onclick="toggleAuthModal()">Close</button>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="checkoutModal">
+    <div id="modalContent">
+      <h2>Checkout</h2>
+      <div class="modal-field">
+        <label>Full Name</label>
+        <input type="text" id="customerName" placeholder="John Doe"/>
+      </div>
+      <div class="modal-field">
+        <label>Email</label>
+        <input type="email" id="customerEmail" placeholder="john@example.com"/>
+      </div>
+      <div class="modal-summary">
+        <div class="modal-summary-title">Order Summary</div>
+        <div id="modalItems"></div>
+        <div class="modal-total">
+          <span class="modal-total-label">Total</span>
+          <span class="modal-total-val" id="modalTotal">₴0.00</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+        <button class="modal-confirm" id="confirmBtn" onclick="placeOrder()">Place Order →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDERS HISTORY MODAL -->
+<div class="modal-overlay" id="ordersOverlay">
+  <div class="modal" style="max-width: 600px;">
+    <div class="drawer-header" style="padding: 0 0 1rem 0;">
+      <h2>Order History</h2>
+      <button class="close-btn" onclick="toggleOrdersModal()">✕</button>
+    </div>
+    <div id="ordersList" style="max-height: 400px; overflow-y: auto;">
+      <div class="status">Loading your orders...</div>
+    </div>
+    <div style="margin-top: 1.5rem;">
+      <button class="modal-cancel" style="width: 100%;" onclick="toggleOrdersModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER DETAILS MODAL -->
+<div class="modal-overlay" id="orderDetailsOverlay">
+  <div class="modal" style="max-width: 500px;">
+    <div class="drawer-header" style="padding: 0 0 1rem 0;">
+      <h2 id="detailsTitle">Order Details</h2>
+      <button class="close-btn" onclick="toggleOrderDetailsModal()">✕</button>
+    </div>
+    <div id="orderDetailsContent">
+      <!-- Сюди буде вставлено деталі замовлення -->
+    </div>
+    <div style="margin-top: 1.5rem;">
+      <button class="modal-cancel" style="width: 100%;" onclick="toggleOrderDetailsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<footer>© 2025 SHOPX — Online Store Demo</footer>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
