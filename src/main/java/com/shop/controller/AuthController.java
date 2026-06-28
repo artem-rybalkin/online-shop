@@ -95,7 +95,7 @@ public class AuthController {
 
     private ResponseEntity<?> authenticatedResponse(User user) {
         String token = jwtUtil.generateToken(user.getUsername(), user.getEmail(), user.getRole());
-        ResponseCookie cookie = buildCookie(token, COOKIE_MAX_AGE_SECONDS);
+        ResponseCookie cookie = buildCookie(token != null ? token : "", COOKIE_MAX_AGE_SECONDS);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(new AuthResponse(user.getUsername(), user.getEmail()));

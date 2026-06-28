@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -39,7 +40,7 @@ public class ProductController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get product by ID")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+    public ResponseEntity<Product> getProductById(@PathVariable @NonNull Long id) {
         log.info("REST request to get product : {}", id);
         return ResponseEntity.ok(productService.getProductById(id));
     }
@@ -56,6 +57,7 @@ public class ProductController {
 
     @PostMapping
     @Operation(summary = "Create a new product", description = "Requires ADMIN role.")
+    @SuppressWarnings("null")
     public Product createProduct(@Valid @RequestBody ProductRequest request) {
         log.info("REST request to create product : {}", request.getName());
         if (productService.existsByName(request.getName())) {
@@ -74,7 +76,7 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete product", description = "Requires ADMIN role.")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteProduct(@PathVariable @NonNull Long id) {
         log.info("REST request to delete product : {}", id);
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();

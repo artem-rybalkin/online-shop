@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 public class CartItemRequest {
-    
+
     @NotNull(message = "Product ID is required")
     private Long productId;
 

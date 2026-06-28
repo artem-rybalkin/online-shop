@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.util.StringUtils.hasText;
@@ -47,7 +48,7 @@ public class OrderController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Order> getOrderById(
-            @PathVariable Long id,
+            @PathVariable @NonNull Long id,
             @RequestParam(required = false) String sessionId,
             @RequestHeader(value = "X-Session-Id", required = false) String sessionIdHeader) {
         String sid = hasText(sessionIdHeader) ? sessionIdHeader : sessionId;
