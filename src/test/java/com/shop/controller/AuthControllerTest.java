@@ -213,4 +213,42 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Username is required"));
     }
+
+    @Test
+    void me_ShouldReturnUnauthorized_WhenNotLoggedIn() throws Exception {
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void me_ShouldReturnCurrentUser_WhenLoggedIn() throws Exception {
+        AuthRequest creds = AuthRequest.builder()
+                .username("me-endpoint-user")
+                .password("password123")
+                .email("me-endpoint-user@example.com")
+                .build();
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(creds)));
+
+        var loginResponse = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(creds)))
+                .andReturn().getResponse();
+
+        mockMvc.perform(get("/api/auth/me").cookie(loginResponse.getCookie("jwt")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("me-endpoint-user"))
+                .andExpect(jsonPath("$.email").value("me-endpoint-user@example.com"));
+    }
+
+    @Test
+    void logout_ShouldReturnOk_AndExpireTheJwtCookie() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Logged out"))
+                .andExpect(cookie().maxAge("jwt", 0))
+                .andExpect(cookie().value("jwt", ""));
+    }
 }

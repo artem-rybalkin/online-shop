@@ -6,6 +6,7 @@ import com.shop.dto.CartItemRequest;
 import com.shop.dto.OrderRequest;
 import com.shop.model.Order;
 import com.shop.model.Product;
+import com.shop.repository.ProductRepository;
 import com.shop.service.ProductService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ class OrderControllerTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private ProductService productService;
+    @Autowired private ProductRepository productRepository;
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
@@ -120,6 +122,15 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(0));
     }
 
+    @Test
+    void getMyOrders_ShouldReturnEmptyPage_WhenNeitherAuthenticatedNorSessionIdProvided() throws Exception {
+        mockMvc.perform(get("/api/orders/my"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
     // ── business logic ────────────────────────────────────────────────────────
 
     @SuppressWarnings("null")
@@ -156,6 +167,30 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.message").exists());
     }
 
+    @SuppressWarnings("null")
+    @Test
+    void createOrder_ShouldReturnBadRequest_WhenStockDropsAfterAddToCart() throws Exception {
+        // Unlike createOrder_ShouldReturnBadRequest_WhenStockIsInsufficient (which is actually
+        // rejected earlier by CartService.addToCart's own check), this forces stock to drop
+        // *after* addToCart already passed, so OrderService.createOrder's own pessimistic-lock
+        // stock re-check is the one that has to catch it.
+        Product product = createProduct("Stock Recheck Product", 5);
+        String sessionId = "order-session-stock-recheck";
+        addToCart(sessionId, product.getId(), 2);
+
+        Product reloaded = productRepository.findById(product.getId()).orElseThrow();
+        reloaded.setStock(1);
+        productRepository.save(reloaded);
+
+        mockMvc.perform(post("/api/orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(OrderRequest.builder()
+                        .sessionId(sessionId)
+                        .customerName("Stock Recheck Buyer").customerEmail("stockrecheck@example.com").build())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Not enough stock for product: Stock Recheck Product"));
+    }
+
     @Test
     void getOrderById_ShouldReturnForbidden_WhenWrongSessionId() throws Exception {
         Product product = createProduct("Order Ownership Product", 5);
@@ -165,6 +200,39 @@ class OrderControllerTest {
 
         mockMvc.perform(get("/api/orders/" + order.getId() + "?sessionId=wrong-session-xyz"))
                 .andExpect(status().isForbidden());
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void getOrderById_ShouldReturnOrder_WhenAuthenticatedOwnerRequests_WithNoSessionId() throws Exception {
+        AuthRequest creds = AuthRequest.builder()
+                .username("order-owner-by-username").password("password123")
+                .email("order-owner-by-username@test.com").build();
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(creds)));
+        Cookie jwtCookie = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(creds)))
+                .andReturn().getResponse().getCookie("jwt");
+
+        Product product = createProduct("Username Ownership Product", 5);
+        String sessionId = "username-ownership-session";
+        addToCart(sessionId, product.getId(), 1);
+
+        String orderResponse = mockMvc.perform(post("/api/orders")
+                .cookie(jwtCookie)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(OrderRequest.builder()
+                        .sessionId(sessionId)
+                        .customerName("Username Owner").customerEmail("order-owner-by-username@test.com").build())))
+                .andReturn().getResponse().getContentAsString();
+        Order order = objectMapper.readValue(orderResponse, Order.class);
+
+        // No sessionId param/header at all — ownership must be established via username match.
+        mockMvc.perform(get("/api/orders/" + order.getId()).cookie(jwtCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(order.getId()));
     }
 
     @SuppressWarnings("null")
