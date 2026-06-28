@@ -291,6 +291,7 @@ class OrderControllerTest {
 
     // ── Rec 10: concurrent pessimistic-lock test ──────────────────────────────
 
+    @SuppressWarnings("null")
     @Test
     @Disabled("H2 MVCC does not block concurrent SELECT FOR UPDATE between threads. " +
               "Run this test against a real MySQL instance to verify pessimistic locking behaviour.")
