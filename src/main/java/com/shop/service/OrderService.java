@@ -6,10 +6,9 @@ import com.shop.exception.NotFoundException;
 import com.shop.repository.OrderRepository;
 import com.shop.repository.UserRepository;
 import com.shop.repository.ProductRepository;
+import com.shop.security.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
@@ -75,13 +74,8 @@ public class OrderService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Отримуємо логін поточного користувача із контексту безпеки Spring Security
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = null;
-        
-        // Spring Security повертає "anonymousUser", якщо користувач не залогінений
-        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
-            user = userRepository.findByUsername(authentication.getName()).orElse(null);
-        }
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        User user = currentUsername != null ? userRepository.findByUsername(currentUsername).orElse(null) : null;
 
         Order order = Order.builder()
             .customerName(customerName)
@@ -114,8 +108,7 @@ public class OrderService {
                 .orElseThrow(() -> new NotFoundException("Order not found with id: " + id));
 
         // Security check: Ensure the order belongs to the requester
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = (auth != null && !"anonymousUser".equals(auth.getName())) ? auth.getName() : null;
+        String username = SecurityUtils.getCurrentUsername();
 
         boolean isOwner = false;
         if (username != null && order.getUser() != null) {
@@ -133,10 +126,12 @@ public class OrderService {
     }
 
     public Page<Order> getOrdersForCurrentUser(String sessionId, Pageable pageable) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = (auth != null && !"anonymousUser".equals(auth.getName())) ? auth.getName() : null;
+        String username = SecurityUtils.getCurrentUsername();
 
-        if (username != null) {
+        if (username != null && sessionId != null) {
+            // Include guest orders placed under this sessionId before the user logged in.
+            return orderRepository.findByUserUsernameOrSessionIdOrderByCreatedAtDesc(username, sessionId, pageable);
+        } else if (username != null) {
             return orderRepository.findByUserUsernameOrderByCreatedAtDesc(username, pageable);
         } else if (sessionId != null) {
             return orderRepository.findBySessionIdOrderByCreatedAtDesc(sessionId, pageable);

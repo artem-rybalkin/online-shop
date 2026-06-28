@@ -21,6 +21,18 @@
       "type": "java.lang.Integer",
       "description": "Fixed-window duration in seconds for the auth endpoint rate limiter.",
       "defaultValue": 60
+    },
+    {
+      "name": "rate-limit.auth.trusted-proxies",
+      "type": "java.lang.String",
+      "description": "Comma-separated IPs of reverse proxies allowed to set X-Forwarded-For for rate-limit IP resolution; from any other remote address the header is ignored.",
+      "defaultValue": ""
+    },
+    {
+      "name": "app.cookie.secure",
+      "type": "java.lang.Boolean",
+      "description": "Whether the JWT auth cookie set by AuthController gets the Secure flag. Set true once the app is served over HTTPS.",
+      "defaultValue": false
     }
   ]
 }

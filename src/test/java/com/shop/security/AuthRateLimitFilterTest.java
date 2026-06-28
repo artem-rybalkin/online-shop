@@ -1,5 +1,7 @@
 package com.shop.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,7 @@ class AuthRateLimitFilterTest {
         filter = new AuthRateLimitFilter();
         ReflectionTestUtils.setField(filter, "maxRequests", 2);
         ReflectionTestUtils.setField(filter, "windowSeconds", 60);
+        ReflectionTestUtils.setField(filter, "objectMapper", new ObjectMapper().registerModule(new JavaTimeModule()));
     }
 
     @Test
@@ -118,8 +121,10 @@ class AuthRateLimitFilterTest {
     }
 
     @Test
-    void doFilter_ShouldUseFirstIp_WhenXForwardedForHasMultipleAddresses() throws Exception {
+    void doFilter_ShouldUseFirstIp_WhenXForwardedForHasMultipleAddresses_AndRemoteAddrIsTrustedProxy() throws Exception {
         ReflectionTestUtils.setField(filter, "maxRequests", 1);
+        // Both requests arrive via the same trusted reverse proxy (default MockHttpServletRequest remoteAddr).
+        ReflectionTestUtils.setField(filter, "trustedProxies", "127.0.0.1");
 
         MockHttpServletRequest req1 = new MockHttpServletRequest("POST", "/api/auth/login");
         req1.addHeader("X-Forwarded-For", "203.0.113.5, 10.0.0.1, 192.168.1.1");
@@ -134,6 +139,32 @@ class AuthRateLimitFilterTest {
         assertThat(first.getStatus()).isNotEqualTo(429);
 
         // Same originating IP (203.0.113.5) — should be rate-limited on second request
+        MockHttpServletResponse second = new MockHttpServletResponse();
+        filter.doFilter(req2, second, chain);
+        assertThat(second.getStatus()).isEqualTo(429);
+    }
+
+    @Test
+    void doFilter_ShouldIgnoreXForwardedFor_WhenRemoteAddrIsNotATrustedProxy() throws Exception {
+        ReflectionTestUtils.setField(filter, "maxRequests", 1);
+        // No trusted-proxies configured (the default) — X-Forwarded-For must not be trusted.
+
+        MockHttpServletRequest req1 = new MockHttpServletRequest("POST", "/api/auth/login");
+        req1.setRemoteAddr("198.51.100.7");
+        req1.addHeader("X-Forwarded-For", "1.1.1.1");
+
+        MockHttpServletRequest req2 = new MockHttpServletRequest("POST", "/api/auth/login");
+        req2.setRemoteAddr("198.51.100.7");
+        // Attacker varies the spoofed header on every request to try to dodge the limit.
+        req2.addHeader("X-Forwarded-For", "2.2.2.2");
+
+        FilterChain chain = (req, resp) -> {};
+
+        MockHttpServletResponse first = new MockHttpServletResponse();
+        filter.doFilter(req1, first, chain);
+        assertThat(first.getStatus()).isNotEqualTo(429);
+
+        // Same real remoteAddr — must still be rate-limited even though X-Forwarded-For changed.
         MockHttpServletResponse second = new MockHttpServletResponse();
         filter.doFilter(req2, second, chain);
         assertThat(second.getStatus()).isEqualTo(429);

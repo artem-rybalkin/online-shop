@@ -9,10 +9,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @ControllerAdvice
@@ -80,9 +77,6 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<Object> buildResponse(String message, @NonNull HttpStatus status) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("message", message);
-        return new ResponseEntity<>(body, status);
+        return new ResponseEntity<>(ErrorResponse.body(message), status);
     }
 }

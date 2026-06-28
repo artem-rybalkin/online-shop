@@ -242,6 +242,46 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.content[0].customerEmail").value("orders-auth-user@test.com"));
     }
 
+    @SuppressWarnings("null")
+    @Test
+    void getMyOrders_ShouldIncludeGuestOrder_WhenUserLogsInButStillSendsSameSessionId() throws Exception {
+        // Place an order as a guest (no JWT) under sessionId S.
+        Product guestProduct = createProduct("Guest Then Login Product", 10);
+        String sessionId = "guest-then-login-session";
+        addToCart(sessionId, guestProduct.getId(), 1);
+        placeOrder(sessionId, "Guest Then Login", "guest-then-login@test.com");
+
+        // Register and log in.
+        AuthRequest creds = AuthRequest.builder()
+                .username("guest-then-login-user").password("password123")
+                .email("guest-then-login-user@test.com").build();
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(creds)));
+        var loginResponse = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(creds)))
+                .andReturn().getResponse();
+        Cookie jwtCookie = loginResponse.getCookie("jwt");
+
+        // Place a second order while authenticated, still under the same sessionId.
+        Product authProduct = createProduct("Guest Then Login Product 2", 10);
+        addToCart(sessionId, authProduct.getId(), 1);
+        mockMvc.perform(post("/api/orders")
+                .cookie(jwtCookie)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(OrderRequest.builder()
+                        .sessionId(sessionId)
+                        .customerName("Guest Then Login").customerEmail("guest-then-login-user@test.com").build())));
+
+        // GET /my with the JWT AND the same sessionId — must include BOTH orders.
+        mockMvc.perform(get("/api/orders/my")
+                .cookie(jwtCookie)
+                .header("X-Session-Id", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
     // ── X-Session-Id header path ──────────────────────────────────────────────
 
     @SuppressWarnings("null")

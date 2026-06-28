@@ -77,8 +77,9 @@ test.describe('Category filter', () => {
   });
 
   test('clicking a non-existent category shows "No products found"', async ({ page }) => {
-    // Trigger handleSearch with a dummy value to simulate no results
-    await page.evaluate(() => window.handleSearch('__no_match_xyzzy__'));
+    // Drive the real search input rather than calling handleSearch() directly —
+    // it's declared with `const` at script scope, so it's never exposed as window.handleSearch.
+    await page.fill('#searchInput', '__no_match_xyzzy__');
     await expect(page.locator('#productGrid')).toContainText('No products found');
   });
 });

@@ -1,6 +1,5 @@
 package com.shop.security;
 
-import com.shop.model.User;
 import com.shop.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

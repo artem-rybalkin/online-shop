@@ -143,4 +143,74 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").exists());
     }
+
+    @SuppressWarnings("null")
+    @Test
+    void register_ShouldReturnBadRequest_WhenUsernameIsBlank() throws Exception {
+        AuthRequest request = AuthRequest.builder()
+                .username("")
+                .password("password123")
+                .email("blank-username@example.com")
+                .build();
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Username is required"));
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void register_ShouldReturnBadRequest_WhenPasswordIsBlank() throws Exception {
+        AuthRequest request = AuthRequest.builder()
+                .username("blank-password-user")
+                .password("")
+                .email("blank-password@example.com")
+                .build();
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Password is required"));
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void login_ShouldSucceed_WithNoEmailField_LikeTheRealFrontendSends() throws Exception {
+        // The browser frontend (app.js) only ever sends {username, password} to /login —
+        // it never includes an email field. Login must not require one.
+        AuthRequest registerRequest = AuthRequest.builder()
+                .username("frontend-shaped-login-user")
+                .password("password123")
+                .email("frontend-shaped-login-user@example.com")
+                .build();
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(registerRequest)));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"frontend-shaped-login-user\",\"password\":\"password123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("jwt"))
+                .andExpect(jsonPath("$.username").value("frontend-shaped-login-user"));
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void login_ShouldReturnBadRequest_WhenUsernameIsBlank() throws Exception {
+        AuthRequest request = AuthRequest.builder()
+                .username("")
+                .password("password123")
+                .email("blank-login-username@example.com")
+                .build();
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Username is required"));
+    }
 }

@@ -3,9 +3,11 @@ package com.shop.controller;
 
 import com.shop.dto.AuthRequest;
 import com.shop.dto.AuthResponse;
+import com.shop.dto.LoginRequest;
 import com.shop.model.User;
 import com.shop.repository.UserRepository;
 import com.shop.security.JwtUtil;
+import com.shop.security.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -14,8 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -61,7 +61,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
@@ -82,13 +82,12 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<?> me() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()
-                || "anonymousUser".equals(authentication.getName())) {
+        String username = SecurityUtils.getCurrentUsername();
+        if (username == null) {
             return ResponseEntity.status(401).build();
         }
 
-        User user = userRepository.findByUsername(authentication.getName())
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return ResponseEntity.ok(new AuthResponse(user.getUsername(), user.getEmail()));
     }

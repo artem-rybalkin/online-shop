@@ -10,4 +10,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Page<Order> findByUserUsernameOrderByCreatedAtDesc(String username, Pageable pageable);
 
     Page<Order> findBySessionIdOrderByCreatedAtDesc(String sessionId, Pageable pageable);
+
+    Page<Order> findByUserUsernameOrSessionIdOrderByCreatedAtDesc(String username, String sessionId, Pageable pageable);
 }

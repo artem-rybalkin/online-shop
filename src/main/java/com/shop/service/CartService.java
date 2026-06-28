@@ -11,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CartService {
@@ -31,26 +32,22 @@ public class CartService {
     @Transactional
     @SuppressWarnings("null")
     public CartItem addToCart(String sessionId, @NonNull Long productId, int quantity) {
-        Product product = productRepository.findById(productId)
+        // Locks the product row so two concurrent adds of the same product can't both pass
+        // the stock check below and create duplicate CartItem rows for the same session.
+        Product product = productRepository.findByIdForUpdate(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found with id: " + productId));
 
-        List<CartItem> existing = cartItemRepository.findBySessionId(sessionId);
-
-        int alreadyInCart = existing.stream()
-                .filter(item -> item.getProduct().getId().equals(productId))
-                .mapToInt(CartItem::getQuantity)
-                .findFirst()
-                .orElse(0);
+        Optional<CartItem> existing = cartItemRepository.findBySessionIdAndProduct_Id(sessionId, productId);
+        int alreadyInCart = existing.map(CartItem::getQuantity).orElse(0);
 
         if (product.getStock() < alreadyInCart + quantity) {
             throw new OrderException("Insufficient stock for product: " + product.getName());
         }
 
-        for (CartItem item : existing) {
-            if (item.getProduct().getId().equals(productId)) {
-                item.setQuantity(item.getQuantity() + quantity);
-                return cartItemRepository.save(item);
-            }
+        if (existing.isPresent()) {
+            CartItem item = existing.get();
+            item.setQuantity(item.getQuantity() + quantity);
+            return cartItemRepository.save(item);
         }
 
         CartItem newItem = new CartItem(null, sessionId, product, quantity);
@@ -58,6 +55,9 @@ public class CartService {
     }
 
     public void removeFromCart(@NonNull Long cartItemId, String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new OrderException("sessionId is required");
+        }
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new NotFoundException("Cart item not found with id: " + cartItemId));
         if (!item.getSessionId().equals(sessionId)) {

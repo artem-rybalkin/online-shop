@@ -1,9 +1,12 @@
 package com.shop.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shop.exception.ErrorResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.lang.NonNull;
@@ -11,8 +14,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Fixed-window rate limiter for authentication endpoints.
@@ -29,10 +34,19 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     @Value("${rate-limit.auth.window-seconds:60}")
     private int windowSeconds;
 
+    // X-Forwarded-For is only trusted when the request's own remote address is one of
+    // these reverse proxies — otherwise a client could spoof the header to get a fresh
+    // rate-limit bucket on every request and bypass the limit entirely.
+    @Value("${rate-limit.auth.trusted-proxies:}")
+    private String trustedProxies;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private final ConcurrentHashMap<String, RateLimitEntry> buckets = new ConcurrentHashMap<>();
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         return !request.getRequestURI().startsWith("/api/auth/");
     }
 
@@ -46,11 +60,10 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         String ip = resolveClientIp(request);
 
         if (!tryConsume(ip)) {
+            String message = "Too many requests. Please try again in " + windowSeconds + " seconds.";
             response.setStatus(429);
             response.setContentType("application/json");
-            response.getWriter().write(
-                    "{\"timestamp\":\"" + LocalDateTime.now() + "\"," +
-                    "\"message\":\"Too many requests. Please try again in " + windowSeconds + " seconds.\"}");
+            response.getWriter().write(objectMapper.writeValueAsString(ErrorResponse.body(message)));
             return;
         }
 
@@ -79,11 +92,25 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
+        String remoteAddr = request.getRemoteAddr();
+        if (!isTrustedProxy(remoteAddr)) {
+            return remoteAddr;
+        }
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
             return forwarded.split(",")[0].trim();
         }
-        return request.getRemoteAddr();
+        return remoteAddr;
+    }
+
+    private boolean isTrustedProxy(String remoteAddr) {
+        if (trustedProxies == null || trustedProxies.isBlank()) {
+            return false;
+        }
+        Set<String> proxies = Arrays.stream(trustedProxies.split(","))
+                .map(String::trim)
+                .collect(Collectors.toSet());
+        return proxies.contains(remoteAddr);
     }
 
     private static class RateLimitEntry {

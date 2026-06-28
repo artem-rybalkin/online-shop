@@ -9,7 +9,9 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "cart_items")
+@Table(name = "cart_items",
+        uniqueConstraints = @UniqueConstraint(name = "uk_cart_items_session_product",
+                columnNames = {"sessionId", "product_id"}))
 public class CartItem {
 
     @Id

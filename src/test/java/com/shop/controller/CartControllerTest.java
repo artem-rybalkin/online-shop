@@ -206,4 +206,15 @@ class CartControllerTest {
         mockMvc.perform(delete("/api/cart/item/999999?sessionId=any-session"))
                 .andExpect(status().isNotFound());
     }
+
+    @SuppressWarnings("null")
+    @Test
+    void removeItem_ShouldReturnBadRequest_WhenSessionIdMissing() throws Exception {
+        Product product = createProduct("Cart No Session Product", 5);
+        CartItem cartItem = addToCart("some-session", product.getId(), 1);
+
+        mockMvc.perform(delete("/api/cart/item/" + cartItem.getId()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("sessionId is required"));
+    }
 }

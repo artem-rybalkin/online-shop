@@ -1,13 +1,12 @@
 package com.shop.exception;
 
-import com.shop.controller.ProductController;
 import com.shop.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
@@ -27,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Verifies that GlobalExceptionHandler never leaks raw DB error messages or
  * internal exception details into HTTP responses.
  *
- * Uses @MockBean on ProductService to force specific exception types; the full
+ * Uses @MockitoBean on ProductService to force specific exception types; the full
  * Spring context is loaded so the real handler wiring is exercised.
  */
 @SpringBootTest
@@ -39,7 +38,7 @@ class GlobalExceptionHandlerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private ProductService productService;
 
     @BeforeEach
