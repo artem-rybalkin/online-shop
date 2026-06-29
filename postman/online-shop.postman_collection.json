@@ -57,6 +57,24 @@
       "name": "Setup",
       "item": [
         {
+          "name": "POST /api/products/reset-stock (no admin JWT -> 403)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/products/reset-stock"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "POST /api/auth/login (admin)",
           "request": {
             "method": "POST",
@@ -74,6 +92,25 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/products/reset-stock (negative stock -> 400)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/products/reset-stock?stock=-1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('stock cannot be negative message', () => pm.expect(pm.response.json().message).to.eql('Stock cannot be negative'));"
                 ]
               }
             }

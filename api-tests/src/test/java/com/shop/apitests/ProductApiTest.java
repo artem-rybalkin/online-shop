@@ -152,6 +152,24 @@ class ProductApiTest extends ApiTestSupport {
             .then().statusCode(403);
     }
 
+    @Test
+    void resetStock_ShouldReturnForbidden_WithoutAdminJwt() {
+        given()
+            .when().post("/api/products/reset-stock")
+            .then().statusCode(403);
+    }
+
+    @Test
+    void resetStock_ShouldReturnBadRequest_WhenStockIsNegative() {
+        Cookie admin = adminCookie();
+
+        given()
+            .cookie(admin)
+            .when().post("/api/products/reset-stock?stock=-1")
+            .then().statusCode(400)
+                .body("message", equalTo("Stock cannot be negative"));
+    }
+
     private int firstProductId() {
         return given()
             .when().get("/api/products?size=1")

@@ -205,6 +205,13 @@ test.describe('Products', () => {
     expect(res.status()).toBe(200);
     expect((await res.json()).stock).toBe(9999);
   });
+
+  test('POST /api/products/reset-stock with a negative stock returns 400', async ({ request }) => {
+    await adminCookie(request);
+    const res = await request.post('/api/products/reset-stock?stock=-1');
+    expect(res.status()).toBe(400);
+    expect((await res.json()).message).toBe('Stock cannot be negative');
+  });
 });
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────

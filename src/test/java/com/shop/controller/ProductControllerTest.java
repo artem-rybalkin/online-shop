@@ -236,4 +236,87 @@ class ProductControllerTest {
         mockMvc.perform(post("/api/products/reset-stock"))
                 .andExpect(status().isForbidden());
     }
+
+    @SuppressWarnings("null")
+    @Test
+    void resetStock_ShouldUpdateEveryProduct_NotJustOne() throws Exception {
+        Product first = productService.createProduct(Product.builder()
+                .name("Reset Stock Multi Product 1").description("x")
+                .price(10.0).stock(0).category("Test").build());
+        Product second = productService.createProduct(Product.builder()
+                .name("Reset Stock Multi Product 2").description("x")
+                .price(10.0).stock(5).category("Test").build());
+
+        long totalProductsBefore = productService.getAllProducts(org.springframework.data.domain.PageRequest.of(0, 1))
+                .getTotalElements();
+
+        mockMvc.perform(post("/api/products/reset-stock")
+                .cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updatedCount").value((int) totalProductsBefore));
+
+        mockMvc.perform(get("/api/products/" + first.getId()))
+                .andExpect(jsonPath("$.stock").value(9999));
+        mockMvc.perform(get("/api/products/" + second.getId()))
+                .andExpect(jsonPath("$.stock").value(9999));
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void resetStock_ShouldAcceptZero_AsAnExplicitStockValue() throws Exception {
+        Product product = productService.createProduct(Product.builder()
+                .name("Reset Stock Zero Product").description("x")
+                .price(10.0).stock(50).category("Test").build());
+
+        mockMvc.perform(post("/api/products/reset-stock?stock=0")
+                .cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stock").value(0));
+
+        mockMvc.perform(get("/api/products/" + product.getId()))
+                .andExpect(jsonPath("$.stock").value(0));
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void resetStock_ShouldAcceptALargeValue() throws Exception {
+        Product product = productService.createProduct(Product.builder()
+                .name("Reset Stock Large Value Product").description("x")
+                .price(10.0).stock(1).category("Test").build());
+
+        mockMvc.perform(post("/api/products/reset-stock?stock=" + Integer.MAX_VALUE)
+                .cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stock").value(Integer.MAX_VALUE));
+
+        mockMvc.perform(get("/api/products/" + product.getId()))
+                .andExpect(jsonPath("$.stock").value(Integer.MAX_VALUE));
+    }
+
+    @Test
+    void resetStock_ShouldReturnBadRequest_WhenStockIsNegative() throws Exception {
+        mockMvc.perform(post("/api/products/reset-stock?stock=-1")
+                .cookie(adminCookie))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Stock cannot be negative"));
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void resetStock_ShouldNotAffectOtherFields_OnlyStock() throws Exception {
+        Product product = productService.createProduct(Product.builder()
+                .name("Reset Stock Field Isolation Product").description("Keep me")
+                .price(42.5).stock(1).category("Test-Category").build());
+
+        mockMvc.perform(post("/api/products/reset-stock")
+                .cookie(adminCookie))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/products/" + product.getId()))
+                .andExpect(jsonPath("$.name").value("Reset Stock Field Isolation Product"))
+                .andExpect(jsonPath("$.description").value("Keep me"))
+                .andExpect(jsonPath("$.price").value(42.5))
+                .andExpect(jsonPath("$.category").value("Test-Category"))
+                .andExpect(jsonPath("$.stock").value(9999));
+    }
 }

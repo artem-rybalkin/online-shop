@@ -87,6 +87,9 @@ public class ProductController {
     @Operation(summary = "Reset stock for every product", description = "Requires ADMIN role. " +
             "Intended for test/dev environments to recover from stock depleted by repeated test runs.")
     public ResponseEntity<Map<String, Object>> resetStock(@RequestParam(defaultValue = "9999") int stock) {
+        if (stock < 0) {
+            throw new OrderException("Stock cannot be negative");
+        }
         log.info("REST request to reset stock for all products to {}", stock);
         int updatedCount = productService.resetAllStock(stock);
         return ResponseEntity.ok(Map.of("stock", stock, "updatedCount", updatedCount));
