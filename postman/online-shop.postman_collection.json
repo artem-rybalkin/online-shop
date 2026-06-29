@@ -1,0 +1,1148 @@
+{
+  "info": {
+    "name": "Online Shop API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('runId')) {",
+          "    pm.collectionVariables.set('runId', Date.now().toString());",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "runId", "value": "" },
+    { "key": "username", "value": "" },
+    { "key": "email", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "checkoutSessionId", "value": "" },
+    { "key": "removalSessionId", "value": "" },
+    { "key": "removalCartItemId", "value": "" },
+    { "key": "ownershipCartItemId", "value": "" },
+    { "key": "orderId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /actuator/health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/actuator/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status UP', () => pm.expect(pm.response.json().status).to.eql('UP'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "POST /api/auth/login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"admin\",\"password\":\"admin\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/products/reset-stock",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/products/reset-stock"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('stock reset to 9999', () => pm.expect(pm.response.json().stock).to.eql(9999));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/auth/register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"postman-user-{{runId}}\",\"password\":\"password123\",\"email\":\"postman-{{runId}}@example.com\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('username', 'postman-user-' + pm.collectionVariables.get('runId'));",
+                  "pm.collectionVariables.set('email', 'postman-' + pm.collectionVariables.get('runId') + '@example.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns the registered username', () => pm.expect(pm.response.json().username).to.eql(pm.collectionVariables.get('username')));",
+                  "pm.test('sets jwt cookie', () => pm.expect(pm.cookies.has('jwt')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/login (no email field, like the real frontend)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{username}}\",\"password\":\"password123\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns the username', () => pm.expect(pm.response.json().username).to.eql(pm.collectionVariables.get('username')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/auth/me (authenticated)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns the logged-in username', () => pm.expect(pm.response.json().username).to.eql(pm.collectionVariables.get('username')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('expires the jwt cookie', () => {",
+                  "  // Max-Age=0 makes a real cookie jar delete the cookie outright (not store '').",
+                  "  pm.expect(pm.cookies.get('jwt')).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/auth/me (after logout -> 401)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/login (wrong password -> 401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{username}}\",\"password\":\"wrong-password\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('generic invalid-credentials message', () => pm.expect(pm.response.json().message).to.eql('Invalid username or password'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/register (duplicate username -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{username}}\",\"password\":\"password123\",\"email\":\"another-{{runId}}@example.com\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('username already exists', () => pm.expect(pm.response.json().error).to.eql('Username already exists'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/register (blank username -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"\",\"password\":\"password123\",\"email\":\"blank-username-{{runId}}@example.com\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('username required message', () => pm.expect(pm.response.json().message).to.eql('Username is required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/register (blank password -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"postman-blankpw-{{runId}}\",\"password\":\"\",\"email\":\"blank-pw-{{runId}}@example.com\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('password required message', () => pm.expect(pm.response.json().message).to.eql('Password is required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/register (invalid email -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"postman-bademail-{{runId}}\",\"password\":\"password123\",\"email\":\"not-an-email\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('invalid email message', () => pm.expect(pm.response.json().message).to.eql('Please provide a valid email address'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/register (malformed JSON -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{not valid json"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('malformed body message', () => pm.expect(pm.response.json().message).to.eql('Malformed or missing request body'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/auth/login (wrong method -> 405)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 405', () => pm.response.to.have.status(405));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "GET /api/products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products?size=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('has at least one product', () => pm.expect(body.content.length).to.be.above(0));",
+                  "pm.collectionVariables.set('productId', body.content[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/products/{id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns the requested id', () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('productId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/products/{id} (not found -> 404)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products/999999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/products/category/{category}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products/category/Electronics"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/products/search",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products/search?name=iphone"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/products (no admin JWT -> 403)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Postman Unauthorized Product\",\"description\":\"x\",\"price\":1.0,\"stock\":1,\"category\":\"Test\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/products/{id} (no admin JWT -> 403)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/login (admin, for product mutations below)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"admin\",\"password\":\"admin\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/products (negative price -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"postman-negative-price-{{runId}}\",\"description\":\"x\",\"price\":-5.0,\"stock\":1,\"category\":\"Test\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('price must be positive', () => pm.expect(pm.response.json().message).to.eql('Price must be positive'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/products (negative stock -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"postman-negative-stock-{{runId}}\",\"description\":\"x\",\"price\":5.0,\"stock\":-1,\"category\":\"Test\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('stock cannot be negative', () => pm.expect(pm.response.json().message).to.eql('Stock cannot be negative'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/products (create, then duplicate name -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"postman-dup-product-{{runId}}\",\"description\":\"x\",\"price\":5.0,\"stock\":1,\"category\":\"Test\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/products (duplicate name -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"postman-dup-product-{{runId}}\",\"description\":\"y\",\"price\":6.0,\"stock\":1,\"category\":\"Test\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/logout (admin, cleanup)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('admin session cleared so Cart/Orders below test pure guest flows', () => {",
+                  "  pm.expect(pm.cookies.get('jwt')).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "POST /api/cart/{sessionId}/add (removal session)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/cart/postman-removal-{{runId}}/add",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\":{{productId}},\"quantity\":1}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('removalSessionId', 'postman-removal-' + pm.collectionVariables.get('runId'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('removalCartItemId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/cart/item/{id} (missing sessionId -> 400)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/cart/item/{{removalCartItemId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('sessionId required message', () => pm.expect(pm.response.json().message).to.eql('sessionId is required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/cart/item/{id}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/cart/item/{{removalCartItemId}}?sessionId={{removalSessionId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cart/{sessionId}/add (checkout session)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/cart/postman-checkout-{{runId}}/add",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\":{{productId}},\"quantity\":1}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('checkoutSessionId', 'postman-checkout-' + pm.collectionVariables.get('runId'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cart/{sessionId}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cart/{{checkoutSessionId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('has one item', () => pm.expect(pm.response.json().length).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cart/{sessionId}/add (quantity 0 -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/cart/postman-zero-qty-{{runId}}/add",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\":{{productId}},\"quantity\":0}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('quantity message', () => pm.expect(pm.response.json().message).to.eql('Quantity must be at least 1'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cart/{sessionId}/add (missing productId -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/cart/postman-no-product-id-{{runId}}/add",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"quantity\":1}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('product id message', () => pm.expect(pm.response.json().message).to.eql('Product ID is required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cart/{sessionId}/add (product not found -> 404)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/cart/postman-no-product-{{runId}}/add",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\":999999,\"quantity\":1}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/cart/item/{id} (not found -> 404)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/cart/item/999999?sessionId=any-session"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cart/{sessionId}/add (for ownership check below)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/cart/postman-ownership-{{runId}}/add",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\":{{productId}},\"quantity\":1}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('ownershipCartItemId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/cart/item/{id} (wrong session -> 403)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/cart/item/{{ownershipCartItemId}}?sessionId=someone-elses-session"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "POST /api/orders (empty cart -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sessionId\":\"postman-empty-{{runId}}\",\"customerName\":\"Empty Cart\",\"customerEmail\":\"empty-{{runId}}@example.com\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('cart is empty message', () => pm.expect(pm.response.json().message).to.eql('Cart is empty'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/orders",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sessionId\":\"{{checkoutSessionId}}\",\"customerName\":\"Postman Buyer\",\"customerEmail\":\"{{email}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('has one order item', () => pm.expect(body.items.length).to.eql(1));",
+                  "pm.collectionVariables.set('orderId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/orders/{id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}?sessionId={{checkoutSessionId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns the requested order', () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('orderId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/orders/{id} (wrong session -> 403)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}?sessionId=wrong-session-xyz"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/orders/{id} (not found -> 404)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/orders/999999?sessionId=any-session"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cart/{sessionId} (cleared after checkout)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cart/{{checkoutSessionId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cart is now empty', () => pm.expect(pm.response.json().length).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/cart/{sessionId}/add (for validation checks below)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/cart/postman-order-validation-{{runId}}/add",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productId\":{{productId}},\"quantity\":1}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/orders (blank customer name -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sessionId\":\"postman-order-validation-{{runId}}\",\"customerEmail\":\"blank-name@example.com\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('customer name required', () => pm.expect(pm.response.json().message).to.eql('Customer name is required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/orders (invalid customer email -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sessionId\":\"postman-order-validation-{{runId}}\",\"customerName\":\"Bad Email Buyer\",\"customerEmail\":\"not-an-email\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('invalid email message', () => pm.expect(pm.response.json().message).to.eql('Must be a valid email address'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/orders (malformed JSON -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{not valid json"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('malformed body message', () => pm.expect(pm.response.json().message).to.eql('Malformed or missing request body'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

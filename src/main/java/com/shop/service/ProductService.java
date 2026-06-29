@@ -49,4 +49,9 @@ public class ProductService {
     public boolean existsByName(String name) {
         return productRepository.existsByName(name);
     }
+
+    @Transactional
+    public int resetAllStock(int stock) {
+        return productRepository.updateAllStock(stock);
+    }
 }

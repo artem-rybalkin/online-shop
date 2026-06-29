@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -80,5 +81,14 @@ public class ProductController {
         log.info("REST request to delete product : {}", id);
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-stock")
+    @Operation(summary = "Reset stock for every product", description = "Requires ADMIN role. " +
+            "Intended for test/dev environments to recover from stock depleted by repeated test runs.")
+    public ResponseEntity<Map<String, Object>> resetStock(@RequestParam(defaultValue = "9999") int stock) {
+        log.info("REST request to reset stock for all products to {}", stock);
+        int updatedCount = productService.resetAllStock(stock);
+        return ResponseEntity.ok(Map.of("stock", stock, "updatedCount", updatedCount));
     }
 }

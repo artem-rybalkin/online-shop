@@ -1,7 +1,6 @@
 const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
-  testDir: './e2e',
   timeout: 30_000,
   retries: 2,
   reporter: 'list',
@@ -14,7 +13,9 @@ module.exports = defineConfig({
   },
 
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox',  use: { ...devices['Desktop Firefox'] } }
+    { name: 'chromium', testDir: './e2e', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox',  testDir: './e2e', use: { ...devices['Desktop Firefox'] } },
+    // Pure API tests via the `request` fixture — no browser, no `page`.
+    { name: 'api', testDir: './api' }
   ]
 });

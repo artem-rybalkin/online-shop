@@ -40,6 +40,12 @@ frontend-tests/node_modules/
 frontend-tests/test-results/
 frontend-tests/playwright-report/
 
+### Contract tests (Pact) ###
+contract-tests/consumer/node_modules/
+
+### Postman / Newman ###
+postman/node_modules/
+
 ### H2 leftover (data/ dir used by old embedded DB) ###
 data/
 

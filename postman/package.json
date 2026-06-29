@@ -1,0 +1,11 @@
+{
+  "name": "online-shop-postman",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:api": "newman run online-shop.postman_collection.json -e online-shop.postman_environment.json"
+  },
+  "devDependencies": {
+    "newman": "^6.2.1"
+  }
+}

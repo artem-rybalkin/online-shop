@@ -1,0 +1,325 @@
+{
+  "consumer": {
+    "name": "OnlineShopFrontend"
+  },
+  "interactions": [
+    {
+      "description": "a login request with invalid credentials",
+      "providerStates": [
+        {
+          "name": "a user does not exist with this username/password combination"
+        }
+      ],
+      "request": {
+        "body": {
+          "password": "wrong",
+          "username": "nonexistent-contract-user"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      "response": {
+        "body": {
+          "message": "Invalid username or password"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.message": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 401
+      }
+    },
+    {
+      "description": "a login request with valid credentials",
+      "providerStates": [
+        {
+          "name": "the admin user exists"
+        }
+      ],
+      "request": {
+        "body": {
+          "password": "admin",
+          "username": "admin"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      "response": {
+        "body": {
+          "email": "admin@shop.local",
+          "username": "admin"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.email": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.username": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request for a non-existent product",
+      "providerStates": [
+        {
+          "name": "product 999999 does not exist"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/products/999999"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a request for order 1 with a non-owning sessionId",
+      "providerStates": [
+        {
+          "name": "order 1 exists and belongs to a different session"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/orders/1",
+        "query": {
+          "sessionId": [
+            "someone-elses-session"
+          ]
+        }
+      },
+      "response": {
+        "status": 403
+      }
+    },
+    {
+      "description": "a request for the current user with no auth cookie",
+      "providerStates": [
+        {
+          "name": "no user is authenticated"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/auth/me"
+      },
+      "response": {
+        "status": 401
+      }
+    },
+    {
+      "description": "a request for the product list",
+      "providerStates": [
+        {
+          "name": "at least one product exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/products",
+        "query": {
+          "size": [
+            "1"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "content": [
+            {
+              "category": "Electronics",
+              "id": 1,
+              "name": "iPhone 14",
+              "price": 35000,
+              "stock": 50
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.content": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 1
+                }
+              ]
+            },
+            "$.content[*].category": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.content[*].id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.content[*].name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.content[*].price": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.content[*].stock": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to add product 1 to a cart",
+      "providerStates": [
+        {
+          "name": "product 1 exists with available stock"
+        }
+      ],
+      "request": {
+        "body": {
+          "productId": 1,
+          "quantity": 1
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/cart/contract-test-session/add"
+      },
+      "response": {
+        "body": {
+          "id": 1,
+          "product": {
+            "id": 1
+          },
+          "quantity": 1,
+          "sessionId": "contract-test-session"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.product": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.quantity": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.sessionId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "13.2.0"
+    },
+    "pactRust": {
+      "ffi": "0.4.22",
+      "models": "1.2.3"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "OnlineShopAPI"
+  }
+}

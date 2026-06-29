@@ -79,7 +79,10 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: frontend-tests/package-lock.json
+          cache-dependency-path: |
+            frontend-tests/package-lock.json
+            contract-tests/consumer/package-lock.json
+            postman/package-lock.json
 
       - name: Install frontend-tests dependencies
         working-directory: frontend-tests
@@ -93,7 +96,7 @@ jobs:
         working-directory: frontend-tests
         run: npx playwright install --with-deps chromium firefox
 
-      - name: Run e2e tests
+      - name: Run e2e tests (browser + API projects)
         working-directory: frontend-tests
         run: npm run test:e2e
 
@@ -104,6 +107,22 @@ jobs:
           name: playwright-report
           path: frontend-tests/playwright-report/
           retention-days: 7
+
+      - name: Generate consumer contract (Pact)
+        working-directory: contract-tests/consumer
+        run: |
+          npm ci
+          npm run test:pact
+
+      - name: Run api-tests (REST Assured + Pact provider verification)
+        working-directory: api-tests
+        run: mvn -B test -Dapi.baseUrl=http://localhost:8080
+
+      - name: Run Postman collection (Newman)
+        working-directory: postman
+        run: |
+          npm ci
+          npm run test:api
 
       - name: Dump app logs on failure
         if: failure()

@@ -213,4 +213,27 @@ class ProductControllerTest {
                 .cookie(adminCookie))
                 .andExpect(status().isNoContent());
     }
+
+    @SuppressWarnings("null")
+    @Test
+    void resetStock_ShouldSetStockOnEveryProduct_WhenAdmin() throws Exception {
+        Product depleted = productService.createProduct(Product.builder()
+                .name("Reset Stock Test Product").description("Will be reset")
+                .price(10.0).stock(0).category("Test").build());
+
+        mockMvc.perform(post("/api/products/reset-stock")
+                .cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stock").value(9999));
+
+        mockMvc.perform(get("/api/products/" + depleted.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stock").value(9999));
+    }
+
+    @Test
+    void resetStock_ShouldReturnForbidden_WhenNoJwt() throws Exception {
+        mockMvc.perform(post("/api/products/reset-stock"))
+                .andExpect(status().isForbidden());
+    }
 }
