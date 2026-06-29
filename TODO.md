@@ -30,8 +30,8 @@ Track host/container **CPU, memory, disk I/O, and network** via Prometheus + Nod
 ### 3 · Identify Playwright flows for reuse in perf tests
 Review `frontend-tests/e2e/shop.spec.js`. Good candidates: **add-to-cart**, **guest checkout**, **login**, **product browse**. Extract shared user-journey helpers usable in k6 or Gatling scripts.
 
-### 4 · Set product stock to unlimited before perf run
-Add a SQL script or admin endpoint that sets `stock = 999999` for all products so stock exhaustion doesn't distort results.
+### ✅ 4 · Set product stock to unlimited before perf run
+Done — `POST /api/products/reset-stock?stock=9999` (admin-only) bulk-sets every product's stock. Originally added to unblock the black-box test suites (see [TESTING.md](TESTING.md)), which hit the exact same "shared seed data gets depleted" problem this perf-test item describes. Reusable as-is for a perf run.
 
 ### 5 · Restore product stock after perf run
 Snapshot stock values before the run and restore them afterwards. Implement as a paired `before-perf.sql` / `after-perf.sql` or a Spring Boot admin endpoint.
