@@ -3,6 +3,10 @@ package com.shop.controller;
 import com.shop.dto.OrderRequest;
 import com.shop.model.Order;
 import com.shop.service.OrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,6 +21,7 @@ import static org.springframework.util.StringUtils.hasText;
 @Slf4j
 @RestController
 @RequestMapping("/api/orders")
+@Tag(name = "Orders", description = "Order placement and retrieval for both guests (sessionId) and authenticated users (JWT)")
 public class OrderController {
 
     private final OrderService orderService;
@@ -26,6 +31,12 @@ public class OrderController {
     }
 
     @PostMapping
+    @Operation(summary = "Place an order from the current cart",
+            description = "Atomically validates and decrements stock, snapshots cart items, then clears the cart.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order placed"),
+        @ApiResponse(responseCode = "400", description = "Cart is empty, insufficient stock, or validation failed")
+    })
     public ResponseEntity<Order> createOrder(@Valid @RequestBody OrderRequest request) {
         log.info("REST request to create order for session: {}", request.getSessionId());
         return ResponseEntity.ok(orderService.createOrder(
@@ -36,6 +47,10 @@ public class OrderController {
     }
 
     @GetMapping("/my")
+    @Operation(summary = "List the caller's orders",
+            description = "Matches by JWT username and/or sessionId — a union, not either/or, so a guest order " +
+                    "placed before login still shows up afterward if the same sessionId is still sent.")
+    @ApiResponse(responseCode = "200", description = "Page of orders (possibly empty)")
     public ResponseEntity<Page<Order>> getMyOrders(
             @RequestParam(required = false) String sessionId,
             @RequestHeader(value = "X-Session-Id", required = false) String sessionIdHeader,
@@ -47,6 +62,12 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get a single order", description = "Ownership enforced by username OR sessionId match.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order returned"),
+        @ApiResponse(responseCode = "403", description = "Caller does not own this order"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     public ResponseEntity<Order> getOrderById(
             @PathVariable @NonNull Long id,
             @RequestParam(required = false) String sessionId,

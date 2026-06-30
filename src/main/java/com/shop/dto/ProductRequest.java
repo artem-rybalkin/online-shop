@@ -19,25 +19,25 @@ public class ProductRequest {
 
     @NotBlank(message = "Product name is required")
     @Size(min = 1, max = 255)
-    @Schema(example = "iPhone 15 Pro")
+    @Schema(description = "Must be unique across products", example = "iPhone 15 Pro")
     private String name;
 
     @Size(max = 1000)
-    @Schema(example = "Titanium design, A17 Pro chip")
+    @Schema(description = "Free-text product description", example = "Titanium design, A17 Pro chip")
     private String description;
 
     @NotNull(message = "Price is required")
     @Positive(message = "Price must be positive")
-    @Schema(example = "45000.0")
+    @Schema(description = "Unit price", example = "45000.0")
     private Double price;
 
     @NotNull(message = "Stock is required")
     @Min(value = 0, message = "Stock cannot be negative")
-    @Schema(example = "10")
+    @Schema(description = "Units available", example = "10")
     private Integer stock;
 
     @NotBlank(message = "Category is required")
     @Size(max = 100)
-    @Schema(example = "Electronics")
+    @Schema(description = "Used for filtering via GET /api/products/category/{category}", example = "Electronics")
     private String category;
 }

@@ -1,4 +1,8 @@
 package com.shop.dto;
 
-public record AuthResponse(String username, String email) {
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public record AuthResponse(
+        @Schema(example = "jane.doe") String username,
+        @Schema(example = "jane.doe@example.com") String email) {
 }

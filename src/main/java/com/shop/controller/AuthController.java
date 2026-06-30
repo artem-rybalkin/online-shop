@@ -8,6 +8,12 @@ import com.shop.model.User;
 import com.shop.security.JwtUtil;
 import com.shop.security.SecurityUtils;
 import com.shop.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -23,6 +29,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Registration, login, and session management via httpOnly JWT cookie")
 public class AuthController {
 
     private static final String COOKIE_NAME = "jwt";
@@ -43,6 +50,13 @@ public class AuthController {
 
     @SuppressWarnings("null")
     @PostMapping("/register")
+    @Operation(summary = "Register a new account",
+            description = "Creates a user and sets a httpOnly jwt cookie.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Account created",
+                content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Username already exists, or validation failed (blank username/password, invalid email)")
+    })
     public ResponseEntity<?> register(@Valid @RequestBody AuthRequest request) {
         if (userService.findByUsername(request.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
@@ -52,6 +66,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Log in",
+            description = "Authenticates with username + password (no email field) and sets a httpOnly jwt cookie.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Authenticated",
+                content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Validation failed (blank username/password)"),
+        @ApiResponse(responseCode = "401", description = "Invalid username or password")
+    })
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
@@ -64,6 +86,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "Log out", description = "Expires the jwt cookie.")
+    @ApiResponse(responseCode = "200", description = "Logged out")
     public ResponseEntity<?> logout() {
         ResponseCookie expiredCookie = buildCookie("", 0);
         return ResponseEntity.ok()
@@ -72,6 +96,12 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @Operation(summary = "Get the current user", description = "Requires a valid jwt cookie.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Current user returned",
+                content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
     public ResponseEntity<?> me() {
         String username = SecurityUtils.getCurrentUsername();
         if (username == null) {
