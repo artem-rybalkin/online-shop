@@ -6,8 +6,9 @@ frontend, a full observability stack (Grafana/Prometheus/Loki/Tempo), and seven 
 automated testing.
 
 For the deep technical write-up (data model, security architecture, business logic, design
-decisions) see **[ARCHITECTURE.md](ARCHITECTURE.md)**. For the testing strategy see
-**[TESTING.md](TESTING.md)**. For the CI pipeline see **[CI.md](CI.md)**.
+decisions) see **[ARCHITECTURE.md](ARCHITECTURE.md)**. For request-by-request API flow examples
+(guest checkout, login, admin, edge cases) see **[USER_JOURNEYS.md](USER_JOURNEYS.md)**. For the
+testing strategy see **[TESTING.md](TESTING.md)**. For the CI pipeline see **[CI.md](CI.md)**.
 
 ## Quick start
 
